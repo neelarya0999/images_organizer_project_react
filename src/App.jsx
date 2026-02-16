@@ -14,7 +14,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Trash2, Edit2, Plus, ExternalLink, GripVertical } from 'lucide-react'; 
+import { Trash2, Edit2, Plus, GripVertical } from 'lucide-react'; 
 import './App.css';
 
 // --- Sortable Item Component ---
@@ -31,61 +31,48 @@ function SortableItem({ id, item, onEdit, onDelete }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    touchAction: 'none' 
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 999 : 1, // Keep dragged item on top
+    touchAction: 'none' // Important for the dragging element
   };
 
   return (
     <div ref={setNodeRef} style={style} className="card">
+      
+      {/* --- IMAGE AREA (For Viewing/Scrolling) --- */}
       <div className="card-image-container">
         <img 
           src={item.imageUrl} 
           alt={item.title} 
           className="card-img"
-          onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=Image+Error'; }} 
+          onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=Error'; }} 
         />
         
-        {/* --- DRAG HANDLE --- 
-            We apply {attributes} and {listeners} HERE only.
-            This allows normal scrolling on the image, but dragging on the icon.
-        */}
+        {/* --- DRAG HANDLE (The ONLY place you can drag from) --- */}
+        {/* We attach listeners ONLY here. This fixes the scroll issue. */}
         <div className="drag-handle" {...attributes} {...listeners}>
-            <GripVertical size={24} color="#fff" />
-        </div>
-
-        {/* Overlay with Actions */}
-        <div className="edit-overlay">
-          <button 
-             className="btn-icon-overlay"
-             onClick={() => window.open(item.imageUrl, '_blank')}
-             title="Open Image"
-          >
-            <ExternalLink size={18} color="white"/>
-          </button>
-
-          <button 
-            className="btn-edit-overlay"
-            onClick={() => onEdit(item)}
-          >
-            <Edit2 size={16} style={{marginRight: 5}}/> Edit
-          </button>
+            <GripVertical size={24} color="#ffffff" />
         </div>
       </div>
       
+      {/* --- CONTENT AREA (Title & Buttons) --- */}
       <div className="card-content">
-        <div className="card-title" title={item.title}>{item.title}</div>
-        <button 
-          className="btn-delete"
-          onClick={() => onDelete(item.id)}
-        >
-           <Trash2 size={16} /> Delete
-        </button>
+        <div className="card-title">{item.title}</div>
+        
+        <div className="card-actions">
+            <button className="btn-action edit" onClick={() => onEdit(item)}>
+                <Edit2 size={16} /> Edit
+            </button>
+            <button className="btn-action delete" onClick={() => onDelete(item.id)}>
+                <Trash2 size={16} /> Delete
+            </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// --- Main Application Component ---
+// --- Main Application ---
 function App() {
   const [items, setItems] = useState([]);
   const [headerTitle, setHeaderTitle] = useState("Business Overview");
@@ -98,11 +85,12 @@ function App() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // --- SENSORS ---
+  // We use a small tolerance (5px) so clicks don't register as drags
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      // Touch sensor now works immediately because we are using a drag handle
-      activationConstraint: { delay: 100, tolerance: 5 },
+    useSensor(TouchSensor, { 
+        // No delay needed because we have a dedicated handle!
+        activationConstraint: { delay: 0, tolerance: 5 } 
     })
   );
 
@@ -110,12 +98,13 @@ function App() {
     const savedData = localStorage.getItem('my-image-gallery');
     const savedTitle = localStorage.getItem('my-page-title');
     if (savedTitle) setHeaderTitle(savedTitle);
-    if (savedData) {
-      setItems(JSON.parse(savedData));
-    } else {
+    if (savedData) setItems(JSON.parse(savedData));
+    else {
+      // Default Data
       setItems([
-        { id: '1', title: 'Short Overview', imageUrl: 'https://images.unsplash.com/photo-1559627756-c73e16b9d621?w=500&q=80', order: 0 },
-        { id: '2', title: 'The Greatest Economic Story', imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=500&q=80', order: 1 },
+        { id: '1', title: 'Short Overview', imageUrl: 'https://images.unsplash.com/photo-1559627756-c73e16b9d621?w=500&q=80' },
+        { id: '2', title: 'Economic Story', imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=500&q=80' },
+        { id: '3', title: 'Full Overview', imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=500&q=80' },
       ]);
     }
   }, []);
@@ -127,7 +116,7 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (active && over && active.id !== over.id) {
       setItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -136,65 +125,26 @@ function App() {
     }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this image?")) {
-      setItems(items.filter(item => item.id !== id));
-    }
-  };
-
-  const handleEditTitle = () => {
-    const newTitle = prompt("Enter new Page Title:", headerTitle);
-    if (newTitle && newTitle.trim() !== "") setHeaderTitle(newTitle);
-  };
-
   const openAddModal = () => {
-    setEditingItem(null);
-    setTitleInput('');
-    setUrlInput('');
-    setErrorMsg('');
-    setIsModalOpen(true);
+    setEditingItem(null); setTitleInput(''); setUrlInput(''); setErrorMsg(''); setIsModalOpen(true);
   };
 
   const openEditModal = (item) => {
-    setEditingItem(item);
-    setTitleInput(item.title);
-    setUrlInput(item.imageUrl);
-    setErrorMsg('');
-    setIsModalOpen(true);
+    setEditingItem(item); setTitleInput(item.title); setUrlInput(item.imageUrl); setErrorMsg(''); setIsModalOpen(true);
   };
 
   const handleSave = () => {
-    setErrorMsg('');
-    if (!titleInput.trim() || !urlInput.trim()) {
-      setErrorMsg("Please fill in all fields.");
-      return;
-    }
+    if (!titleInput.trim() || !urlInput.trim()) return setErrorMsg("Fill all fields");
     
-    // Duplicate Check
-    const isDuplicate = items.some(item => 
-      item.imageUrl === urlInput && 
-      (!editingItem || item.id !== editingItem.id)
-    );
-    if (isDuplicate) {
-      setErrorMsg("Duplicate image URL.");
-      return;
+    // Check duplicates
+    if (items.some(i => i.imageUrl === urlInput && i.id !== editingItem?.id)) {
+        return setErrorMsg("Duplicate Image URL");
     }
 
     if (editingItem) {
-      const updatedItems = items.map(item => {
-        if (item.id === editingItem.id) return { ...item, title: titleInput, imageUrl: urlInput };
-        return item;
-      });
-      setItems(updatedItems);
+      setItems(items.map(i => i.id === editingItem.id ? { ...i, title: titleInput, imageUrl: urlInput } : i));
     } else {
-      const newItem = {
-        id: Math.random().toString(36).substr(2, 9), 
-        title: titleInput,
-        imageUrl: urlInput,
-        order: items.length,
-        createdAt: Date.now()
-      };
-      setItems([...items, newItem]);
+      setItems([...items, { id: Math.random().toString(36).substr(2, 9), title: titleInput, imageUrl: urlInput }]);
     }
     setIsModalOpen(false);
   };
@@ -204,64 +154,44 @@ function App() {
       <div className="header">
         <h1>{headerTitle}</h1>
         <div className="header-buttons">
-          <button className="btn btn-outline" onClick={handleEditTitle}>Edit Title</button>
+          <button className="btn btn-outline" onClick={() => {
+              const t = prompt("New Title:", headerTitle); 
+              if(t) setHeaderTitle(t);
+          }}>Edit Title</button>
           <button className="btn btn-primary" onClick={openAddModal}><Plus size={18} /> Add Video</button>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <h3>No images found</h3>
-          <p>Click "Add Video" to create your first card.</p>
-        </div>
-      ) : (
-        <DndContext 
-          sensors={sensors} 
-          collisionDetection={closestCenter} 
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={items} strategy={rectSortingStrategy}>
-            <div className="grid-container">
-              {items.map((item) => (
-                <SortableItem 
-                  key={item.id} 
-                  id={item.id} 
-                  item={item} 
-                  onEdit={openEditModal} 
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={items} strategy={rectSortingStrategy}>
+          <div className="grid-container">
+            {items.map((item) => (
+              <SortableItem key={item.id} id={item.id} item={item} onEdit={openEditModal} onDelete={(id) => {
+                  if(window.confirm("Delete?")) setItems(items.filter(i => i.id !== id));
+              }} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {isModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingItem ? "Edit Image" : "Add New Image"}</h2>
-            {errorMsg && <div className="error-banner">{errorMsg}</div>}
+            <h3>{editingItem ? "Edit Video" : "Add Video"}</h3>
+            {errorMsg && <div className="error-msg">{errorMsg}</div>}
             
-            <div className="modal-body">
-              <div className="modal-form">
-                <div className="input-group">
-                  <label>Title</label>
-                  <input value={titleInput} onChange={(e) => setTitleInput(e.target.value)} placeholder="Title"/>
+            <div className="modal-content-stack">
+                <div className="modal-inputs">
+                    <label>Title</label>
+                    <input value={titleInput} onChange={e => setTitleInput(e.target.value)} placeholder="Title" />
+                    
+                    <label>Image URL</label>
+                    <input value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="https://..." />
                 </div>
-                <div className="input-group">
-                  <label>Image URL</label>
-                  <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://..."/>
+                
+                <div className="modal-preview">
+                    {urlInput ? <img src={urlInput} alt="Preview" /> : <div className="no-img">Preview</div>}
                 </div>
-              </div>
-              
-              <div className="preview-section">
-                <label>Preview</label>
-                <div className="preview-box">
-                  {urlInput ? (
-                    <img src={urlInput} alt="Preview" onError={(e) => {e.target.style.display='none'}}/>
-                  ) : <span>No Image</span>}
-                </div>
-              </div>
             </div>
 
             <div className="modal-actions">
