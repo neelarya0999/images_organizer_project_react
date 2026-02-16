@@ -4,6 +4,7 @@ body {
   font-family: 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll on mobile */
 }
 
 .container {
@@ -18,8 +19,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  flex-wrap: wrap; /* Allows wrapping on small phones */
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .header h1 {
@@ -42,7 +43,6 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  white-space: nowrap; /* Prevents text breaking in buttons */
 }
 
 .btn-outline {
@@ -59,9 +59,9 @@ body {
 /* Grid */
 .grid-container {
   display: grid;
-  /* Auto-fill is great, but minmax(280px) ensures it doesn't get too small */
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  padding-bottom: 50px;
 }
 
 /* Card */
@@ -70,14 +70,9 @@ body {
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid #333;
-  /* IMPORTANT: Only blocking touch here allows dnd-kit to work, 
-     but we must be careful not to block scrolling on the whole page */
-  touch-action: none; 
   position: relative;
-}
-
-.card:hover {
-  border-color: #555;
+  /* Crucial for Drag Handle functionality */
+  touch-action: pan-y; 
 }
 
 .card-image-container {
@@ -85,11 +80,6 @@ body {
   height: 160px;
   width: 100%;
   background-color: #000;
-  cursor: grab;
-}
-
-.card-image-container:active {
-  cursor: grabbing;
 }
 
 .card-img {
@@ -98,30 +88,40 @@ body {
   object-fit: cover;
 }
 
-/* Drag Indicator (Icon in top right) */
-.drag-indicator {
+/* --- DRAG HANDLE (Mobile Fix) --- */
+.drag-handle {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   border-radius: 4px;
-  padding: 4px;
-  opacity: 0.7;
+  padding: 8px; /* Bigger touch target */
+  cursor: grab;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.drag-handle:active {
+  cursor: grabbing;
+  background: #fca311;
 }
 
 /* Edit Overlay */
 .edit-overlay {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   opacity: 0;
   transition: opacity 0.2s;
+  z-index: 5;
 }
 
+/* Show overlay on hover (desktop) or active (mobile tap) */
 .card-image-container:hover .edit-overlay {
   opacity: 1;
 }
@@ -139,8 +139,8 @@ body {
 .btn-icon-overlay {
   background-color: rgba(255,255,255,0.2);
   border: 1px solid white;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -148,7 +148,6 @@ body {
   cursor: pointer;
 }
 
-/* Content */
 .card-content {
   padding: 15px;
 }
@@ -176,33 +175,33 @@ body {
   cursor: pointer;
 }
 
-/* Modal */
+/* --- RESPONSIVE MODAL --- */
 .modal-backdrop {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.85);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal {
   background: #2d2d2d;
-  padding: 25px;
+  padding: 20px;
   border-radius: 8px;
-  /* FIX: Mobile friendly width */
-  width: 90%; 
-  max-width: 500px; 
+  width: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   gap: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
 .modal-body {
   display: flex;
   gap: 20px;
-  flex-wrap: wrap; /* Wrap on mobile */
 }
 
 .modal-form {
@@ -210,7 +209,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  min-width: 200px;
 }
 
 .preview-section {
@@ -218,14 +216,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-}
-
-/* On mobile, make preview full width */
-@media (max-width: 600px) {
-  .preview-section {
-    width: 100%;
-    margin-top: 10px;
-  }
 }
 
 .preview-box {
@@ -246,54 +236,32 @@ body {
   object-fit: cover;
 }
 
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
 .input-group input {
-  padding: 10px;
+  padding: 12px;
   border-radius: 4px;
   border: 1px solid #555;
   background: #1a1a1a;
   color: white;
-}
-
-.error-banner {
-  background-color: #ff4d4d20;
-  border: 1px solid #ff4d4d;
-  color: #ff4d4d;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 14px;
+  width: 100%; /* Full width */
+  box-sizing: border-box; /* Include padding in width */
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
 }
 
-.btn-cancel {
-  background: #555;
-  color: white;
+.error-banner {
+  background-color: #ff4d4d20;
+  color: #ff4d4d;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 4px;
 }
 
-.empty-state {
-  text-align: center;
-  padding: 50px;
-  color: #777;
-}
-
-/* --- MOBILE SPECIFIC TWEAKS --- */
-@media (max-width: 480px) {
-  .container {
-    margin: 10px auto;
-    padding: 10px;
-  }
-  
+/* --- MOBILE QUERY --- */
+@media (max-width: 600px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
@@ -303,13 +271,21 @@ body {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .grid-container {
-    /* Force single column on very small screens */
-    grid-template-columns: 1fr; 
+    grid-template-columns: 1fr; /* Single column */
   }
 
-  /* Make sure edit overlay is always visible on touch? 
-     Optional: Keep it hidden until tap. 
-     Currently tap triggers drag after hold. */
+  .modal-body {
+    flex-direction: column; /* Stack inputs and preview vertically */
+  }
+
+  .preview-section {
+    width: 100%;
+    height: auto;
+  }
+  
+  .preview-box {
+    height: 150px; /* Bigger preview on mobile */
+  }
 }
