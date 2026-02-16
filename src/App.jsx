@@ -16,7 +16,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Trash2, Edit2, Plus, ExternalLink } from 'lucide-react'; 
 import './App.css';
 
-// --- Sortable Item Component ---
+// Sortable Item Component 
 function SortableItem({ id, item, onEdit, onDelete }) {
   const {
     attributes,
@@ -237,7 +237,7 @@ function App() {
              Edit Title
           </button>
           <button className="btn btn-primary" onClick={openAddModal}>
-            <Plus size={18} /> Add Video
+            <Plus size={18} /> Add Photo
           </button>
         </div>
       </div>
