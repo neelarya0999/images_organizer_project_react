@@ -14,7 +14,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Trash2, Edit2, Plus, GripVertical } from 'lucide-react'; 
+import { Trash2, Edit2, Plus, GripVertical, ExternalLink } from 'lucide-react'; 
 import './App.css';
 
 // --- Sortable Item Component ---
@@ -37,6 +37,12 @@ function SortableItem({ id, item, onEdit, onDelete }) {
     touchAction: 'pan-y' 
   };
 
+  const handleImageClick = (e) => {
+    // Prevent bubbling so it doesn't trigger other things
+    e.stopPropagation();
+    window.open(item.imageUrl, '_blank');
+  };
+
   return (
     <div ref={setNodeRef} style={style} className="card">
       
@@ -47,14 +53,31 @@ function SortableItem({ id, item, onEdit, onDelete }) {
           alt={item.title} 
           className="card-img"
           onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=Error'; }} 
+          // Feature Restored: Click image to open
+          onClick={handleImageClick}
         />
         
-        {/* --- DRAG HANDLE --- 
-            We attach drag listeners ONLY to this specific button.
-            This separates "scrolling" (card) from "dragging" (handle).
-        */}
+        {/* --- DRAG HANDLE (The ONLY place you can drag from) --- */}
         <div className="drag-handle" {...attributes} {...listeners}>
             <GripVertical size={24} color="#ffffff" />
+        </div>
+
+        {/* --- HOVER OVERLAY (Feature Restored) --- */}
+        <div className="edit-overlay">
+           <button 
+             className="btn-icon-overlay"
+             onClick={handleImageClick}
+             title="Open Image"
+           >
+             <ExternalLink size={20} color="white"/>
+           </button>
+           
+           <button 
+             className="btn-edit-overlay" 
+             onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+           >
+             <Edit2 size={16} style={{marginRight:5}} /> Edit
+           </button>
         </div>
       </div>
       
@@ -91,7 +114,6 @@ function App() {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { 
-        // No delay needed because we have a dedicated handle!
         activationConstraint: { delay: 0, tolerance: 5 } 
     })
   );
@@ -105,7 +127,6 @@ function App() {
     if (savedData) {
       setItems(JSON.parse(savedData));
     } else {
-      // Default Data if empty
       setItems([
         { id: '1', title: 'Short Overview', imageUrl: 'https://images.unsplash.com/photo-1559627756-c73e16b9d621?w=500&q=80' },
         { id: '2', title: 'Economic Story', imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=500&q=80' },
@@ -142,7 +163,6 @@ function App() {
   const handleSave = () => {
     if (!titleInput.trim() || !urlInput.trim()) return setErrorMsg("Fill all fields");
     
-    // Check duplicates
     if (items.some(i => i.imageUrl === urlInput && i.id !== editingItem?.id)) {
         return setErrorMsg("Duplicate Image URL");
     }
@@ -164,7 +184,7 @@ function App() {
               const t = prompt("New Title:", headerTitle); 
               if(t) setHeaderTitle(t);
           }}>Edit Title</button>
-          <button className="btn btn-primary" onClick={openAddModal}><Plus size={18} /> Add Video</button>
+          <button className="btn btn-primary" onClick={openAddModal}><Plus size={18} /> Add Image</button>
         </div>
       </div>
 
