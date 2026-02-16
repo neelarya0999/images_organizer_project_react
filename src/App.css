@@ -56,7 +56,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  /* Allow scrolling on the card body */
+  /* IMPORTANT: Allow vertical panning (scrolling) on the card body */
   touch-action: pan-y; 
 }
 
@@ -79,10 +79,10 @@ body {
   right: 10px;
   background: rgba(0, 0, 0, 0.7);
   color: white;
-  padding: 8px;
+  padding: 10px;
   border-radius: 5px;
   cursor: grab;
-  /* Crucial: This element blocks scroll to allow drag */
+  /* IMPORTANT: Block scrolling ONLY on the handle so dragging works */
   touch-action: none; 
   z-index: 10;
   display: flex;

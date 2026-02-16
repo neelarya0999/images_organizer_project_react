@@ -32,14 +32,15 @@ function SortableItem({ id, item, onEdit, onDelete }) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 999 : 1, // Keep dragged item on top
-    touchAction: 'none' // Important for the dragging element
+    zIndex: isDragging ? 999 : 1, 
+    // IMPORTANT: 'pan-y' allows the user to scroll vertically when touching the card
+    touchAction: 'pan-y' 
   };
 
   return (
     <div ref={setNodeRef} style={style} className="card">
       
-      {/* --- IMAGE AREA (For Viewing/Scrolling) --- */}
+      {/* --- IMAGE AREA --- */}
       <div className="card-image-container">
         <img 
           src={item.imageUrl} 
@@ -48,14 +49,16 @@ function SortableItem({ id, item, onEdit, onDelete }) {
           onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=Error'; }} 
         />
         
-        {/* --- DRAG HANDLE (The ONLY place you can drag from) --- */}
-        {/* We attach listeners ONLY here. This fixes the scroll issue. */}
+        {/* --- DRAG HANDLE --- 
+            We attach drag listeners ONLY to this specific button.
+            This separates "scrolling" (card) from "dragging" (handle).
+        */}
         <div className="drag-handle" {...attributes} {...listeners}>
             <GripVertical size={24} color="#ffffff" />
         </div>
       </div>
       
-      {/* --- CONTENT AREA (Title & Buttons) --- */}
+      {/* --- CONTENT AREA --- */}
       <div className="card-content">
         <div className="card-title">{item.title}</div>
         
@@ -85,7 +88,6 @@ function App() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // --- SENSORS ---
-  // We use a small tolerance (5px) so clicks don't register as drags
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { 
@@ -94,13 +96,16 @@ function App() {
     })
   );
 
+  // Load from Local Storage
   useEffect(() => {
     const savedData = localStorage.getItem('my-image-gallery');
     const savedTitle = localStorage.getItem('my-page-title');
     if (savedTitle) setHeaderTitle(savedTitle);
-    if (savedData) setItems(JSON.parse(savedData));
-    else {
-      // Default Data
+    
+    if (savedData) {
+      setItems(JSON.parse(savedData));
+    } else {
+      // Default Data if empty
       setItems([
         { id: '1', title: 'Short Overview', imageUrl: 'https://images.unsplash.com/photo-1559627756-c73e16b9d621?w=500&q=80' },
         { id: '2', title: 'Economic Story', imageUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=500&q=80' },
@@ -109,6 +114,7 @@ function App() {
     }
   }, []);
 
+  // Save to Local Storage
   useEffect(() => {
     localStorage.setItem('my-image-gallery', JSON.stringify(items));
     localStorage.setItem('my-page-title', headerTitle);
